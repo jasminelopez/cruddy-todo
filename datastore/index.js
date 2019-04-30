@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+var Promise = require('bluebird');
 
 var items = {};
 
@@ -24,33 +25,31 @@ exports.readAll = (callback) => {
     if (err) {
       throw err;
     }
-    var allTodos = _.map(files, (filename) => {
-      // fs.readFile(path.join(exports.dataDir,filename), (err, data) => {
-      //   console.log('---->>>',data.toString());
-      //   if (err) {
-      //     throw err;
-      //   }
-      //   var id = filename.split('.')[0];
-      //   var text = data.toString;
-      //   return {id, text};
-      // });
-      var paddedId = filename.split('.')[0];
-      return {id: paddedId, text: paddedId};
+
+    var allPromises = _.map(files,(filename) =>{
+      return new Promise(function(resolve, reject){
+        fs.readFile(path.join(exports.dataDir, filename), (err, text) => {
+          if (err){
+            reject(err);
+          } else {
+            var paddedId = filename.split('.')[0];
+            resolve(JSON.stringify({id: paddedId, text: text.toString()}));
+          }
+        });
+      });
     });
 
-    callback(null, allTodos);
+    Promise.all(allPromises).then(function (objects){
+      var allTodos = _.map(objects, (object) => {
+        return JSON.parse(object);
+      });
+      callback(null, allTodos);
+    });
   });
 
 };
 
 exports.readOne = (id, callback) => {
-  // var text = items[id];
-  // if (!text) {
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   callback(null, { id, text });
-  // }
-
   fs.readFile(path.join(exports.dataDir,id + '.txt'), (err, text) => {
     if (err) {
       callback(err);
@@ -62,21 +61,6 @@ exports.readOne = (id, callback) => {
 };
 
 exports.update = (id, text, callback) => {
-  // var item = items[id];
-  // if (!item) {
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   items[id] = text;
-  //   callback(null, { id, text });
-  // }
-  // fs.writeFile(path.join(exports.dataDir,id + '.txt'), text, (err) => {
-  //   if (err){
-  //     callback(err);
-  //   } else {
-  //     callback(null, {id: id, text: text});
-  //   }
-  // });
-
   fs.access(path.join(exports.dataDir,id + '.txt'), (err) => {
     if (err){
       callback(err);
@@ -94,15 +78,6 @@ exports.update = (id, text, callback) => {
 };
 
 exports.delete = (id, callback) => {
-  // var item = items[id];
-  // delete items[id];
-  // if (!item) {
-  //   // report an error if item not found
-  //   callback(new Error(`No item with id: ${id}`));
-  // } else {
-  //   callback();
-  // }
-
   fs.unlink(path.join(exports.dataDir, id + '.txt'), (err) => {
     if (err) {
       callback(err);
