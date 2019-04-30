@@ -19,10 +19,26 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  var data = _.map(items, (text, id) => {
-    return { id, text };
+
+  fs.readdir(exports.dataDir,(err, files) => {
+    if (err){
+      throw err;
+    }
+    var allTodos = _.map(files, (filename) => {
+      fs.readFile(path.join(exports.dataDir,filename), (err, data) => {
+        console.log('---->>>',data.toString());
+        if (err){
+          throw err;
+        }
+        var id = filename.split('.')[0];
+        var text = data.toString;
+        return {id, text};
+      });
+    });
+
+    callback(null, allTodos);
   });
-  callback(null, data);
+
 };
 
 exports.readOne = (id, callback) => {
